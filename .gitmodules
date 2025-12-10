@@ -1,0 +1,3 @@
+[submodule "modern-software-dev-assignments"]
+	path = modern-software-dev-assignments
+	url = https://github.com/mihail911/modern-software-dev-assignments.git
