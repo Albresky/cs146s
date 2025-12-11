@@ -7,6 +7,7 @@ import json
 from typing import Any
 from ollama import chat
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -16,6 +17,10 @@ KEYWORD_PREFIXES = (
     "action:",
     "next:",
 )
+
+
+class ActionItemList(BaseModel):
+    items: List[str]
 
 
 def _is_action_line(line: str) -> bool:
@@ -87,3 +92,32 @@ def _looks_imperative(sentence: str) -> bool:
         "investigate",
     }
     return first.lower() in imperative_starters
+
+
+def extract_action_items_llm(text: str) -> List[str]:
+    """
+    Extract action items using an LLM (Ollama).
+    """
+    if not text.strip():
+        return []
+
+    try:
+        response = chat(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Extract action items from the following text. Return them as a list of strings.",
+                },
+                {"role": "user", "content": text},
+            ],
+            model="deepseek-r1:8b",
+            format=ActionItemList.model_json_schema(),
+        )
+        content = response.message.content
+        data = ActionItemList.model_validate_json(content)
+        print(f"LLM extracted items: {data.items}")
+        return data.items
+    except Exception as e:
+        print(f"Error calling Ollama: {e}")
+        # Fallback to heuristic extraction if LLM fails
+        return extract_action_items(text)
